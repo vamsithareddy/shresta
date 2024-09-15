@@ -1,0 +1,153 @@
+# Function to create a database connection with a timeout
+def create_connection():
+    return sqlite3.connect('loans_investments.db', timeout=10)
+
+# Function to create tables
+def create_tables():
+    with create_connection() as conn:
+        cursor = conn.cursor()
+        
+        # Creating tables
+        cursor.execute('''
+        CREATE TABLE IF NOT EXISTS Account (
+            Id INTEGER PRIMARY KEY AUTOINCREMENT,
+            Holder_Name TEXT NOT NULL,
+            Bank_Name TEXT NOT NULL,
+            IFSC TEXT NOT NULL,
+            Number TEXT NOT NULL,
+            Branch TEXT NOT NULL,
+            Account_Type TEXT NOT NULL
+        )
+        ''')
+        
+        cursor.execute('''
+        CREATE TABLE IF NOT EXISTS Borrower (
+            Id INTEGER PRIMARY KEY AUTOINCREMENT,
+            Name TEXT NOT NULL,
+            Mobile TEXT NOT NULL,
+            Email TEXT NOT NULL,
+            Address TEXT NOT NULL,
+            Pan TEXT NOT NULL,
+            Account_Id INTEGER,
+            Aadhaar TEXT NOT NULL,[]
+            FOREIGN KEY (Account_Id) REFERENCES Account (Id)
+        )
+        ''')
+        
+        cursor.execute('''
+        CREATE TABLE IF NOT EXISTS Facilitator (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            mobile TEXT NOT NULL,
+            email TEXT NOT NULL,
+            address TEXT NOT NULL,
+            pan TEXT NOT NULL,
+            account_id INTEGER,
+            aadhaar TEXT NOT NULL,
+            FOREIGN KEY (account_id) REFERENCES Account (id)
+        )
+        ''')
+        
+        cursor.execute('''
+        CREATE TABLE IF NOT EXISTS Investor (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            mobile TEXT NOT NULL,
+            email TEXT NOT NULL,
+            address TEXT NOT NULL,
+            pan TEXT NOT NULL,
+            account_id INTEGER,
+            aadhaar TEXT NOT NULL,
+            legal_heir_name TEXT,
+            legal_heir_pan TEXT,
+            FOREIGN KEY (account_id) REFERENCES Account (id)
+        )
+        ''')
+        
+        cursor.execute('''
+        CREATE TABLE IF NOT EXISTS Partner (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            mobile TEXT NOT NULL,
+            email TEXT NOT NULL,
+            address TEXT NOT NULL,
+            pan TEXT NOT NULL,
+            account_id INTEGER,
+            aadhaar TEXT NOT NULL,
+            FOREIGN KEY (account_id) REFERENCES Account (id)
+        )
+        ''')
+        
+        cursor.execute('''
+        CREATE TABLE IF NOT EXISTS Firm (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            mobile TEXT NOT NULL,
+            email TEXT NOT NULL,
+            address TEXT NOT NULL,
+            pan TEXT NOT NULL,
+            account_id INTEGER,
+            registered_date DATE NOT NULL,
+            members INTEGER NOT NULL,
+            percent_owned REAL NOT NULL,
+            firm_state TEXT NOT NULL,
+            FOREIGN KEY (account_id) REFERENCES Account (id)
+        )
+        ''')
+        
+        cursor.execute('''
+        CREATE TABLE IF NOT EXISTS Asset (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            asset_type TEXT NOT NULL,
+            asset_mode TEXT NOT NULL,
+            holder_name TEXT NOT NULL,
+            deed_id TEXT NOT NULL,
+            size REAL NOT NULL,
+            units TEXT NOT NULL
+        )
+        ''')
+        
+        cursor.execute('''
+        CREATE TABLE IF NOT EXISTS Loan (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        recipient TEXT NOT NULL,
+        principal REAL NOT NULL DEFAULT 0,
+        interest_rate REAL NOT NULL,
+        interest_frequency TEXT NOT NULL,
+        interest_expected REAL,
+        interest_realized REAL,
+        interest_paid_up REAL,
+        expenses REAL NOT NULL DEFAULT 0,
+        loan_state TEXT NOT NULL,
+        asset_id INTEGER,
+        FOREIGN KEY (asset_id) REFERENCES Asset(id)
+    )
+    ''')
+        
+        cursor.execute('''CREATE TABLE IF NOT EXISTS Transactions (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        transaction_type TEXT CHECK (
+                            transaction_type IN (
+                                'PRINCIPAL FROM INVESTOR', 'PRINCIPAL TO INVESTOR', 
+                                'PRINCIPAL TO BORROWER', 'PRINCIPAL FROM BORROWER', 
+                                'INTEREST FROM BORROWER', 'INTEREST TO INVESTOR', 
+                                'BUSINESS EXPENSES'
+                            )
+                        ),
+                        business_expense_subtype TEXT CHECK (
+                            (transaction_type != 'BUSINESS EXPENSES') OR 
+                            (business_expense_subtype IN ('Legal', 'Travel', 'Registration', 'Brokerage', 'Other'))
+                        ),
+                        amount REAL,
+                        mode TEXT CHECK (mode IN ('CASH', 'ONLINE')),
+                        date TEXT,
+                        from_account INTEGER,
+                        to_account INTEGER,
+                        loan_id INTEGER,
+                        via TEXT,
+                        notes TEXT,
+                        FOREIGN KEY (from_account) REFERENCES Account(id),
+                        FOREIGN KEY (to_account) REFERENCES Account(id),
+                        FOREIGN KEY (loan_id) REFERENCES Loan(id)
+                    )''')
